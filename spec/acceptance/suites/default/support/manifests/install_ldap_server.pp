@@ -1,15 +1,15 @@
-# NOTE: The design of the simp_openldap module requires most configuration
-#       to be handled from hiera
-class{'simp_openldap': is_server => true }
+# NOTE: The LDAP server configuration configuration largely handled from hiera
+
+if $facts['os']['release']['major'] == '7' {
+  class{'simp_openldap': is_server => true }
+}
+else {
+  include 'simp_ds389::instances::accounts'
+}
+
 include 'svckill'
 include 'iptables'
-
 iptables::listen::tcp_stateful { 'ssh':
   dports       => 22,
   trusted_nets => ['any'],
 }
-iptables::listen::tcp_stateful { 'ldaps':
-  dports       => [389,636],
-  trusted_nets => ['any'],
-}
-

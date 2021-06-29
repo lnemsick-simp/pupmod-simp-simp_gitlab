@@ -20,7 +20,10 @@ describe 'simp_gitlab using ldap' do
     @manifest__remove_gitlab = File.read(
       File.expand_path('../support/manifests/remove_gitlab.pp',__FILE__)
     )
-    @manifest__ldap_server   = File.read(
+    @manifest__remove_ldap_server = File.read(
+      File.expand_path('../support/manifests/remove_ldap_server.pp',__FILE__)
+    )
+    @manifest__install_ldap_server   = File.read(
       File.expand_path('../support/manifests/install_ldap_server.pp',__FILE__)
     )
     @manifest__gitlab = <<~EOS
@@ -79,30 +82,36 @@ describe 'simp_gitlab using ldap' do
         apply_manifest_on(gitlab_server, @manifest__remove_gitlab, catch_failures: true)
 
         # clean out earlier ldap environments
-        on(ldap_server,
-           'puppet resource service slapd ensure=stopped > /dev/null && ' +
-             'rm -rf /var/lib/ldap /etc/openldap && ' +
-             'yum erase -y openldap-{servers,clients}; :'
-          )
+        apply_manifest_on(ldap_server, @manifest__remove_ldap_server, catch_failures: true)
 
         # set up the ldap server
         # ------------------------------
         # distribute common LDAP & trusted_nets settings
-        hosts.each { |h| set_hieradata_on(h, @ldap_hieradata, 'default') }
+# FIXME is this actually required?  Only hosts configured with puppet is LDAP server and
+# GitLab server.  Furthermore, @ldap_hieradata is not fixed here but fixed for GitLab
+# server
+#        hosts.each { |h| set_hieradata_on(h, @ldap_hieradata, 'default') }
 
         # install LDAP service
-        apply_manifest_on(ldap_server, @manifest__ldap_server)
+        apply_manifest_on(ldap_server, @manifest__install_ldap_server)
 
         # add LDAP accounts
-        ldif_file = File.expand_path('../support/files/ldap_test_user.ldif',__FILE__)
-        ldif_text = File.read(ldif_file).gsub('LDAP_BASE_DN',@ldap_domains)
-        create_remote_file(ldap_server, '/root/user_ldif.ldif', ldif_text)
-        result = on(ldap_server, 'ldapadd -x -ZZ ' +
+        os_major  = pfact_on(ldap_server, 'os.release.major')
+        if os_major == '7'
+          ldif_file = File.expand_path('../support/files/ldap_test_user.ldif',__FILE__)
+          ldif_text = File.read(ldif_file).gsub('LDAP_BASE_DN',@ldap_domains)
+          create_remote_file(ldap_server, '/root/user_ldif.ldif', ldif_text)
+# FIXME Why using start TLS here? Does this work because the certs are already
+# set in openldap config file by by simp_openldap::client?
+          result = on(ldap_server, 'ldapadd -x -ZZ ' +
                         "-D cn=LDAPAdmin,ou=People,#{@ldap_domains} " +
                         "-H ldap://#{ldap_server_fqdn} " +
                         "-w 'suP3rP@ssw0r!' " +
                         '-f /root/user_ldif.ldif'
-        )
+          )
+        else
+          fail('NOT YET IMPLEMENTED')
+        end
       end
 
       it 'should be configured with the test hiera data' do

@@ -1,4 +1,5 @@
 ---
+simp_options::firewall: true
 simp_options::trusted_nets:   ['any']
 simp_options::puppet::server: there.is.no.puppet.server
 simp_options::puppet::ca:     there.is.no.puppet.ca
@@ -10,6 +11,9 @@ pki::public_key_source:  "/etc/pki/simp-testing/pki/public/%{facts.fqdn}.pub"
 pki::cacerts_sources:
   - "/etc/pki/simp-testing/pki/cacerts"
 
+###############################################################################
+# Commond LDAP settings
+###############################################################################
 simp_options::ldap: true
 simp_options::ldap::uri:
   - ldap://LDAP_URI
@@ -23,10 +27,23 @@ simp_options::ldap::sync_hash: '{SSHA}BNPDR0qqE6HyLTSlg13T0e/+yZnSgYQz'
 simp_options::ldap::master:  ldap://LDAP_URI
 simp_options::ldap::root_dn: cn=LDAPAdmin,ou=People,LDAP_BASE_DN
 
+#FIXME who needs this?  Does this impact the curl operations?
+simp_openldap::client::tls_cipher_suite:
+- 'HIGH'
+- '-SSLv2'
 
+###############################################################################
+# simp_ds389::instances::accounts settings only applicable on EL8+
+###############################################################################
+simp_ds389::instances::accounts::root_pw: <%= root_pw %>
 
-simp_openldap::app_pki_dir: /etc/pki/simp_apps/openldap/x509
-simp_openldap::app_pki_external_source: /etc/pki/simp-testing/pki
+###############################################################################
+
+###############################################################################
+# simp_openldap::server settings only applicable on EL7+
+###############################################################################
+#simp_openldap::app_pki_dir: /etc/pki/simp_apps/openldap/x509
+#simp_openldap::app_pki_external_source: /etc/pki/simp-testing/pki
 simp_openldap::server::conf::rootpw: "{SSHA}TghZyHW6r8/NL4fo0Q8BnihxVb7A7af5"
 simp_openldap::server::use_ppolicy: true
 simp_openldap::server::conf::tls_cipher_suite:
@@ -34,9 +51,6 @@ simp_openldap::server::conf::tls_cipher_suite:
 - '-SSLv2'
 simp_openldap::server::conf::tls_protocol_min: 3.3
 
-simp_openldap::client::tls_cipher_suite:
-- 'HIGH'
-- '-SSLv2'
 simp_openldap::server::conf::slapd_log_level:
 - 'stats'
 - 'sync'
@@ -49,6 +63,7 @@ simp_openldap::server::conf::default_ldif::ppolicy_pwd_must_change: false
 simp_openldap::server::conf::default_ldif::ppolicy_pwd_min_length: 3
 simp_openldap::server::conf::default_ldif::ppolicy_pwd_check_quality: 0
 simp_openldap::server::conf::default_ldif::ppolicy_pwd_max_failure: 100
+###############################################################################
 
 # allow vagrant access
 sudo::user_specifications:

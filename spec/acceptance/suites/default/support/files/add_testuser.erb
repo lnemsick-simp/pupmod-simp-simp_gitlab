@@ -1,0 +1,28 @@
+# ------------------------------------------------------------------------------
+# ldapuser1 should be able to log into gitlab
+# ------------------------------------------------------------------------------
+#FIXME what about description
+dsidm "<%= ds_root_name %>" -b "<%= domains %>" posixgroup create --cn ldapuser1 --gidNumber 10001
+
+#FIXME is displayName description?
+#FIXME what about givenName, sn, loginShell?
+dsidm "<%= ds_root_name %>" -b "<%= domains %>" user create --cn ldapuser1 --uid ldapuser1 --displayName "Test user 1" --uidNumber 10001 --gidNumber 10001 --homeDirectory /home/ldapuser1
+
+#suP3rP@ssw0r!
+dsidm "<%= ds_root_name %>" -b "<%= domains %>" user modify ldapuser1 add:userPassword:{SSHA}r2GaizHFWY8pcHpIClU0ye7vsO4uHv/y
+
+
+# ------------------------------------------------------------------------------
+# ldapuser2 does *not* belong to the gitlab group
+# ------------------------------------------------------------------------------
+dsidm "<%= ds_root_name %>" -b "<%= domains %>" posixgroup create --cn ldapuser2 --gidNumber 10002
+
+dsidm "<%= ds_root_name %>" -b "<%= domains %>" user create --cn ldapuser2 --uid ldapuser2 --displayName "Test User" --uidNumber 10002 --gidNumber 10002 --homeDirectory /home/ldapuser2
+
+#suP3rP@ssw0r!
+dsidm "<%= ds_root_name %>" -b "<%= domains %>" user modify ldapuser2 add:userPassword:{SSHA}r2GaizHFWY8pcHpIClU0ye7vsO4uHv/y
+
+
+dsidm "<%= ds_root_name %>" -b "<%= domains %>" posixgroup create --cn gitlab --gidNumber 19999
+dsidm "<%= ds_root_name %>" -b "<%= domains %>" posixgroup modify gitlab add:member:uid=ldapuser1,ou=People,<%= domains %>
+
