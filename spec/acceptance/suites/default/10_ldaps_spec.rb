@@ -93,6 +93,7 @@ describe 'simp_gitlab using ldap' do
 #        hosts.each { |h| set_hieradata_on(h, @ldap_hieradata, 'default') }
 
         # install LDAP service
+        set_hieradata_on(ldap_server, @ldap_hieradata, 'default')
         apply_manifest_on(ldap_server, @manifest__install_ldap_server)
 
         # add LDAP accounts
